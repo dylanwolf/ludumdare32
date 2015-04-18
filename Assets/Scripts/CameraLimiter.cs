@@ -4,7 +4,6 @@ using System.Collections.Generic;
 
 public class CameraLimiter : MonoBehaviour
 {
-    public Collider2D Player;
     public float CameraSpeed = 2.0f;
 
 	public static CameraLimiter Current;
@@ -40,8 +39,8 @@ public class CameraLimiter : MonoBehaviour
         float width = cam.ViewportToWorldPoint(maxViewportX).x - cam.ViewportToWorldPoint(Vector3.zero).x;
 
         cameraLocation = new Rect(
-                Player.transform.position.x - (width / 2),
-                Player.transform.position.y - (height / 2),
+				cam.transform.position.x - (width / 2),
+				cam.transform.position.y - (height / 2),
                 width,
                 height
             );
@@ -89,14 +88,14 @@ public class CameraLimiter : MonoBehaviour
 
         // Re-center camera on player
 		tmpPos = transform.position;
-		tmpPos.x = Player.transform.position.x;
-		tmpPos.y = Player.transform.position.y;
+		tmpPos.x = PlayerCharacter.CurrentPosition.position.x;
+		tmpPos.y = PlayerCharacter.CurrentPosition.position.y;
 		transform.position = tmpPos;
 
         // Update desired camera position
         newCameraLocation = cameraLocation;
-		newCameraLocation.x = Player.transform.position.x - (newCameraLocation.width / 2.0f);
-		newCameraLocation.y = Player.transform.position.y - (newCameraLocation.height / 2.0f);
+		newCameraLocation.x = PlayerCharacter.CurrentPosition.position.x - (newCameraLocation.width / 2.0f);
+		newCameraLocation.y = PlayerCharacter.CurrentPosition.position.y - (newCameraLocation.height / 2.0f);
 
         // Determine which zone is the best fit
         bestCameraOverlap = 0;
