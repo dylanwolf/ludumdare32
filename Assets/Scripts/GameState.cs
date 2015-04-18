@@ -8,6 +8,7 @@ public class GameState : MonoBehaviour {
 	#region States
 	public static ActionState CurrentActionState;
 	public static LightPower CurrentLightPower = LightPower.Freeze;
+	public static LightPower OwnedPowers = LightPower.Damage | LightPower.Freeze | LightPower.BreakTerrain;
 	#endregion 
 
 	#region Defaults

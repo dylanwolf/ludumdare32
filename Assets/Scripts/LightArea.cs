@@ -23,35 +23,51 @@ public class LightArea : MonoBehaviour {
 	{
 		for (float timer = EffectTimerMax; timer >= 0; timer -= Time.deltaTime)
 		{
+			if (GameState.CurrentActionState != ActionState.Playing)
+			{
+				timer += Time.deltaTime;
+				yield return 0;
+			}
+
 			counter.UpdateValue(timer);
 			yield return 0;
 		}
 		isInEffect = false;
 		triggeredLight.color = Color.white;
 		CounterBar.ReturnToPool(counter);
-		affectedPower = null;
+		AffectedPower = null;
 		counter = null;
 	}
 
 	Transform tmpPrefab;
-	LightPower? affectedPower;
+	public LightPower? AffectedPower;
 	void OnMouseUpAsButton()
 	{
+		if (GameState.CurrentActionState != ActionState.Playing)
+			return;
+
 		if (isInEffect)
 			return;
 
 		isInEffect = true;
-		triggeredLight.color = GameState.CurrentLightPower == LightPower.Damage ? new Color(1, 0, 0) : new Color(0, 0, 1);
-		affectedPower = GameState.CurrentLightPower;
+
+		triggeredLight.color = EffectConstants.GetEffectColor(GameState.CurrentLightPower);
+		AffectedPower = GameState.CurrentLightPower;
 		tmpPrefab = ParticlePrefabs[Random.Range(0, ParticlePrefabs.Length)];
 		Instantiate(tmpPrefab, particleSource.position, particleSource.rotation * tmpPrefab.rotation);
-		counter = CounterBar.InstantiateFromPool(particleSource, TimerBarOffset, Quaternion.identity, new Color(64/255.0f, 109/255.0f, 151/255.0f), EffectTimerMax, EffectTimerMax);
+		counter = CounterBar.InstantiateFromPool(particleSource, TimerBarOffset, Quaternion.identity, EffectConstants.GetEffectColor(GameState.CurrentLightPower), EffectTimerMax, EffectTimerMax);
 		StartCoroutine("DoEffect");
 	}
 
 	void OnTriggerStay2D(Collider2D collider)
 	{
-		if (affectedPower.HasValue)
-			collider.gameObject.SendMessage("DoHit", affectedPower.Value, SendMessageOptions.DontRequireReceiver);
+		if (GameState.CurrentActionState != ActionState.Playing)
+			return;
+
+		if (AffectedPower.HasValue)
+		{
+			Debug.Log(collider.name);
+			collider.gameObject.SendMessage("DoHit", AffectedPower.Value, SendMessageOptions.DontRequireReceiver);
+		}
 	}
 }

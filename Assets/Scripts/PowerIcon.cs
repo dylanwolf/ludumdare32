@@ -26,6 +26,9 @@ public class PowerIcon : MonoBehaviour {
 
 	void OnMouseUpAsButton()
 	{
+		if (GameState.CurrentActionState != ActionState.Playing)
+			return;
+
 		SwitchPower();
 	}
 }
