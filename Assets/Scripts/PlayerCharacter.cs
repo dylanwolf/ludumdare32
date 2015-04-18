@@ -1,7 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public abstract class EnemyCharacter : MonoBehaviour {
+public class PlayerCharacter : MonoBehaviour {
+
+	public static PlayerCharacter Current;
+	public static Transform CurrentPosition;
 
 	[System.NonSerialized]
 	public PlatformingState Platforming = PlatformingState.Falling;
@@ -11,12 +14,7 @@ public abstract class EnemyCharacter : MonoBehaviour {
 	public float JumpForce = 1.0f;
 	public float GravityForce = 1.0f;
 	public float Speed = 1.0f;
-
-	public Transform[] ParticlePrefabs;
-	public float Health = 1.0f;
-	public float LightDamage = 4.0f;
-	float currentHealth;
-	public Vector3 HealthBarOffset;
+	public float AccelerationTime = 0.5f;
 
 	bool isGrounded = false;
 	bool hitHead = false;
@@ -25,32 +23,33 @@ public abstract class EnemyCharacter : MonoBehaviour {
 	int hitCount = 0;
 	const float CASTING_RADIUS = 0.1f;
 
-	protected int aiDirection = 0;
-	protected bool aiJump = false;
-	protected abstract bool DecideAction();
-	protected abstract void InitializeEnemy();
+	float inputDirection;
+	float lastInputDirection;
+	float? jumpInput;
+	float moveSpeed = 0;
+	bool inputJump;
 
-	protected bool isFrozen = false;
 	Rigidbody2D _r;
-	protected Transform _t;
+	Transform _t;
 
-	protected virtual void Awake()
+	void Awake()
 	{
 		_r = GetComponent<Rigidbody2D>();
 		_t = transform;
+
+		Current = this;
+		CurrentPosition = _t;
 	}
 
-	protected virtual void Start()
+	void Start()
 	{
 		childColliders = GetComponentsInChildren<Collider2D>();
-		InitializeEnemy();
-		currentHealth = Health;
 	}
 
 	IEnumerator JumpCoroutine()
 	{
 		Platforming = PlatformingState.Jumping;
-		for (float timer = JumpTimerMax; timer >= 0; timer -= Time.deltaTime)
+		for (float timer = JumpTimerMax + (jumpPower * JumpTimeBonus); timer >= 0; timer -= Time.deltaTime)
 		{
 			if (GameState.CurrentActionState != ActionState.Playing)
 			{
@@ -58,12 +57,13 @@ public abstract class EnemyCharacter : MonoBehaviour {
 				yield return 0;
 			}
 
-			if (Platforming == PlatformingState.Grounded)
+			if (Platforming != PlatformingState.Jumping)
 				break;
 
 			yield return 0;
 		}
 
+		jumpSpeedMultiplier = 1;
 		if (Platforming != PlatformingState.Grounded)
 		{
 			Platforming = PlatformingState.Falling;
@@ -72,10 +72,22 @@ public abstract class EnemyCharacter : MonoBehaviour {
 
 	const string JUMP_COROUTINE = "JumpCoroutine";
 
-	protected void DoJump()
+	bool startedJump = false;
+	float jumpSpeedMultiplier = 1;
+	void DoJump()
 	{
 		if (Platforming == PlatformingState.Grounded)
+		{
+			jumpInput = inputDirection;
+			if (moveSpeed > 0.5)
+			{
+				jumpSpeedMultiplier = 1.5f;
+				jumpPower *= 2;
+			}
 			StartCoroutine(JUMP_COROUTINE);
+			startedJump = true;
+		}
+		inputJump = false;
 	}
 
 	bool TestRaycastHit(Transform t, int layerMask)
@@ -111,7 +123,7 @@ public abstract class EnemyCharacter : MonoBehaviour {
 	bool foundMatch = false;
 	Vector2 tmpVelocity;
 	Vector3 tmpScale;
-	protected virtual void FixedUpdate()
+	void FixedUpdate()
 	{
 		// Test for current position
 		isGrounded = false;
@@ -127,6 +139,7 @@ public abstract class EnemyCharacter : MonoBehaviour {
 
 		if (isGrounded && Platforming != PlatformingState.Grounded)
 		{
+			jumpInput = null;
 			Platforming = PlatformingState.Grounded;
 			changed = true;
 		}
@@ -143,6 +156,7 @@ public abstract class EnemyCharacter : MonoBehaviour {
 			{
 				if (TestRaycastHit(t, LayerManager.EnemyAndTerrainLayers))
 				{
+					Debug.Log("Hit head");
 					hitHead = true;
 					break;
 				}
@@ -152,22 +166,19 @@ public abstract class EnemyCharacter : MonoBehaviour {
 				Platforming = PlatformingState.Falling;
 		}
 
-		// Ask AI what to do
-		if (DecideAction())
-			changed = true;
-
 		// Apply movement
 		tmpVelocity = _r.velocity;
 		tmpScale = _t.localScale;
-		if (aiDirection != 0)
+		if (inputDirection != 0)
 		{
 			// Apply walking
-			if (_r.velocity.x == 0 || Mathf.Sign(_r.velocity.x) != Mathf.Sign(aiDirection))
+			if (startedJump || speedUpFromStopCoroutineRunning || _r.velocity.x == 0 || inputDirection != lastInputDirection)
 			{
-				tmpVelocity.x = aiDirection * Speed;
-				tmpScale.x = Mathf.Abs(tmpScale.x) * aiDirection;
+				tmpVelocity.x = inputDirection * Speed * moveSpeed * jumpSpeedMultiplier;
+				tmpScale.x = Mathf.Abs(tmpScale.x) * Mathf.Sign(inputDirection);
 				changed = true;
 			}
+			startedJump = false;
 		}
 		else
 		{
@@ -177,10 +188,12 @@ public abstract class EnemyCharacter : MonoBehaviour {
 				changed = true;
 			}
 		}
+		lastInputDirection = inputDirection;
 
 		// Apply jumping
-		if (aiJump)
+		if (inputJump)
 			DoJump();
+
 		else if (Platforming != PlatformingState.Jumping)
 			StopCoroutine(JUMP_COROUTINE);
 
@@ -188,13 +201,6 @@ public abstract class EnemyCharacter : MonoBehaviour {
 		{
 			tmpVelocity.y = JumpForce;
 			changed = true;
-		}
-
-		if (isFrozen)
-		{
-			tmpVelocity = Vector2.zero;
-			changed = true;
-			isFrozen = false;
 		}
 
 		// Apply falling
@@ -209,35 +215,64 @@ public abstract class EnemyCharacter : MonoBehaviour {
 			_r.velocity = tmpVelocity;
 	}
 
-	CounterBar healthBar;
-	Transform tmpParticles;
-	void DealDamage(float damage)
+	IEnumerator SpeedUpFromStop()
 	{
-		currentHealth -= damage;
-		if (currentHealth <= 0)
+		speedUpFromStopCoroutineRunning = true;
+		for (float timer = 0; timer <= AccelerationTime; timer += Time.deltaTime)
 		{
-			tmpParticles = ParticlePrefabs[Random.Range(0, ParticlePrefabs.Length)];
-			Instantiate(tmpParticles, _t.position, tmpParticles.rotation);
-			DestroyObject(gameObject);
+			if (GameState.CurrentActionState != ActionState.Playing)
+			{
+				timer -= Time.deltaTime;
+				yield return 0;
+			}
+
+			moveSpeed = Mathf.Sin(((timer/AccelerationTime) - 1) * Mathf.PI * 0.5f) + 1;
+			yield return 0;
 		}
-		else if (currentHealth < Health)
-		{
-			if (healthBar == null)
-				healthBar = CounterBar.InstantiateFromPool(_t, HealthBarOffset, Quaternion.identity, Color.red, currentHealth, Health);
-			else
-				healthBar.UpdateValue(currentHealth);
-		}
+		moveSpeed = 1;
+		speedUpFromStopCoroutineRunning = false;
 	}
 
-	protected virtual void DoHit(LightPower power)
+	float jumpPower = 0;
+	public float MaxJumpHoldTime = 0.2f;
+	public float JumpTimeBonus = 0.3f;
+	bool isHoldingJump = false;
+	bool holdJumpCoroutineRunning = false;
+	bool speedUpFromStopCoroutineRunning = false;
+	IEnumerator HoldJumpButton()
 	{
-		if (power == LightPower.Damage)
+		holdJumpCoroutineRunning = true;
+		for (jumpPower = 0; jumpPower < MaxJumpHoldTime; jumpPower += Time.deltaTime)
 		{
-			DealDamage(LightDamage * Time.fixedDeltaTime);	
+			if (GameState.CurrentActionState != ActionState.Playing)
+			{
+				jumpPower -= Time.deltaTime;
+				yield return 0;
+			}
+
+			if (!isHoldingJump)
+				break;
+
+			yield return 0;
 		}
-		else if (power == LightPower.Freeze)
-		{
-			isFrozen = true;
-		}
+
+		inputJump = true;
+		holdJumpCoroutineRunning = false;
+	}
+
+	const string INPUT_HORIZONTAL = "Horizontal";
+	const string INPUT_JUMP = "Jump";
+	void Update()
+	{
+		if (jumpInput.HasValue)
+			inputDirection = jumpInput.Value;
+		else
+			inputDirection = Input.GetAxis(INPUT_HORIZONTAL);
+		if (inputDirection != 0 && lastInputDirection == 0)
+			StartCoroutine(SpeedUpFromStop());
+
+		isHoldingJump = Input.GetButton(INPUT_JUMP);
+		if (isHoldingJump && !holdJumpCoroutineRunning)
+			StartCoroutine(HoldJumpButton());
 	}
 }
