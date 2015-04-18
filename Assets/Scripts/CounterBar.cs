@@ -34,6 +34,8 @@ public class CounterBar : MonoBehaviour {
 		{
 			tmpBar = ((GameObject)Instantiate(GameState.Current.CounterBarPrefab, tmpPosWithOffset, rotation)).GetComponent<CounterBar>();
 			tmpTransform = tmpBar.transform;
+			tmpTransform.rotation = rotation;
+			tmpTransform.position = tmpPosWithOffset;
 		}
 
 		tmpTransform.parent = parent;
@@ -47,6 +49,7 @@ public class CounterBar : MonoBehaviour {
 
 	public static void ReturnToPool(CounterBar bar)
 	{
+		bar.transform.parent = null;
 		bar.gameObject.SetActive(false);
 	}
 

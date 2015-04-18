@@ -82,7 +82,7 @@ public class PlayerCharacter : MonoBehaviour {
 			if (moveSpeed > 0.5)
 			{
 				jumpSpeedMultiplier = 1.5f;
-				jumpPower *= 2;
+				jumpPower *= 1.25f;
 			}
 			StartCoroutine(JUMP_COROUTINE);
 			startedJump = true;
@@ -204,7 +204,7 @@ public class PlayerCharacter : MonoBehaviour {
 		}
 
 		// Apply falling
-		if (Platforming == PlatformingState.Falling && _r.velocity.y >= 0)
+		if (Platforming == PlatformingState.Falling && _r.velocity.y > -GravityForce)
 		{
 			tmpVelocity.y = -GravityForce;
 			changed = true;

@@ -15,8 +15,14 @@ public class GameState : MonoBehaviour {
 	public GameObject CounterBarPrefab;
 	#endregion
 
+	public LightPower[] StartingPowers;
+
 	void Awake()
 	{
 		Current = this;
+
+		OwnedPowers = LightPower.Damage;
+		foreach (LightPower power in StartingPowers)
+			OwnedPowers |= power;
 	}
 }
