@@ -1,12 +1,13 @@
 fileFormatVersion: 2
 guid: 7545ea74b54ff1843a68e6e20c3cb2ab
-timeCreated: 1429334042
+timeCreated: 1429336186
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
     21300000: PowerIcons_0
     21300002: PowerIcons_1
     21300004: PowerIcons_2
+    21300006: PowerIcons_3
   serializedVersion: 2
   mipmaps:
     mipMapMode: 0
@@ -76,6 +77,16 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 192
+        y: 0
+        width: 96
+        height: 96
+      alignment: 1
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: PowerIcons_3
+      rect:
+        serializedVersion: 2
+        x: 288
         y: 0
         width: 96
         height: 96
