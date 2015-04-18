@@ -66,7 +66,6 @@ public class LightArea : MonoBehaviour {
 
 		if (AffectedPower.HasValue)
 		{
-			Debug.Log(collider.name);
 			collider.gameObject.SendMessage("DoHit", AffectedPower.Value, SendMessageOptions.DontRequireReceiver);
 		}
 	}

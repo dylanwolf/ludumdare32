@@ -5,6 +5,7 @@ using System;
 public enum ActionState
 {
 	Playing,
+	GameOver,
 }
 
 public enum PlatformingState

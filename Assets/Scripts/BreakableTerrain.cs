@@ -9,7 +9,6 @@ public class BreakableTerrain : MonoBehaviour {
 
 	void DoHit(LightPower power)
 	{
-		Debug.Log("Terrain");
 		if (GameState.CurrentActionState != ActionState.Playing)
 			return;
 
