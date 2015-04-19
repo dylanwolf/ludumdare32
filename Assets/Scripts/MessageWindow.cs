@@ -105,6 +105,12 @@ public class MessageWindow : MonoBehaviour {
 			yield return 0;
 		}
 		_r.enabled = false;
+
+		if (!string.IsNullOrEmpty(newLevel))
+		{
+			Application.LoadLevel(newLevel);
+			GameState.Current.SetStatus(ActionState.Playing);
+		}
 	}
 
 	public void DisplayText(string message)
@@ -113,5 +119,14 @@ public class MessageWindow : MonoBehaviour {
 		if (showingText)
 			StopCoroutine(FADE_TEXT_COROUTINE);
 		StartCoroutine(FADE_TEXT_COROUTINE);
+	}
+
+	string newLevel = null;
+	public void DisplayFinalText(string message, string nextLevel)
+	{
+		GameState.Current.SetStatus(ActionState.FinishedLevel);
+		MessageTime = 2.0f;
+		DisplayText(message);
+		newLevel = nextLevel;
 	}
 }

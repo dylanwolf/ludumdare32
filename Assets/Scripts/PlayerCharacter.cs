@@ -99,7 +99,7 @@ public class PlayerCharacter : MonoBehaviour {
 
 		for (int i = 0; i < hitCount; i++)
 		{
-			if (raycastHits[i] == null)
+			if (raycastHits[i] == null || raycastHits[i].isTrigger)
 				break;
 
 			foundMatch = false;
@@ -304,14 +304,5 @@ public class PlayerCharacter : MonoBehaviour {
 		isHoldingJump = Input.GetButton(INPUT_JUMP);
 		if (isHoldingJump && !holdJumpCoroutineRunning)
 			StartCoroutine(HoldJumpButton());
-	}
-
-	void OnCollisionEnter2D(Collision2D collision)
-	{
-		if (collision.collider.gameObject.layer == LayerManager.EnemyCollisionLayer)
-		{
-			MessageWindow.Current.DisplayText("A bad guy defeated you!");
-			GameState.Current.SetStatus(ActionState.GameOver);
-		}
 	}
 }

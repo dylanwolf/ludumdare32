@@ -6,6 +6,7 @@ public enum ActionState
 {
 	Playing,
 	GameOver,
+	FinishedLevel
 }
 
 public enum PlatformingState
