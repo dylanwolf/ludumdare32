@@ -294,6 +294,9 @@ public class PlayerCharacter : MonoBehaviour {
 	const string INPUT_JUMP = "Jump";
 	void Update()
 	{
+		if (Input.GetKeyDown(KeyCode.Escape))
+			Application.Quit();
+
 		if (jumpInput.HasValue)
 			inputDirection = jumpInput.Value;
 		else
