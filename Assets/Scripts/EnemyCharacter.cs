@@ -230,6 +230,7 @@ public abstract class EnemyCharacter : MonoBehaviour {
 		currentHealth -= damage;
 		if (currentHealth <= 0)
 		{
+			Soundboard.PlayBadGuyDeath();
 			tmpParticles = ParticlePrefabs[Random.Range(0, ParticlePrefabs.Length)];
 			Instantiate(tmpParticles, _t.position, tmpParticles.rotation);
 			DestroyObject(gameObject);
@@ -243,11 +244,25 @@ public abstract class EnemyCharacter : MonoBehaviour {
 		}
 	}
 
+	bool soundWait = false;
+	IEnumerator WaitForSoundTick()
+	{
+		soundWait = true;
+		for (float timer = 0; timer < 0.2f; timer += Time.deltaTime)
+			yield return 0;
+		soundWait = false;
+	}
+
 	protected virtual void DoHit(LightPower power)
 	{
 		if (power == LightPower.Damage)
 		{
-			DealDamage(LightDamage * Time.fixedDeltaTime);	
+			DealDamage(LightDamage * Time.fixedDeltaTime);
+			if (!soundWait)
+			{
+				StartCoroutine(WaitForSoundTick());
+				Soundboard.PlayBadGuyDamage();
+			}
 		}
 		else if (power == LightPower.Freeze)
 		{
@@ -259,6 +274,7 @@ public abstract class EnemyCharacter : MonoBehaviour {
 	{
 		if (collision.collider.gameObject.layer == LayerManager.PlayerLayer)
 		{
+			Soundboard.PlayGoodGuyDamage();
 			MessageWindow.Current.DisplayText("A bad guy defeated you!");
 			GameState.Current.SetStatus(ActionState.GameOver);
 		}

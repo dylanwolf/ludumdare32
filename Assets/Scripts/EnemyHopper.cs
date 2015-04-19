@@ -9,6 +9,8 @@ public class EnemyHopper : EnemyCharacter {
 	bool decideResult = false;
 	bool hasActivated = false;
 
+	public int Hops = 1;
+
 	protected override bool DecideAction()
 	{
 		if (!hasActivated)
@@ -26,10 +28,11 @@ public class EnemyHopper : EnemyCharacter {
 			decideResult = true;
 		aiDirection = currentDirection;
 
-		if (Platforming == PlatformingState.Grounded)
+		if (Platforming == PlatformingState.Grounded && Hops > 0)
 		{
 			decideResult = !aiJump;
 			aiJump = true;
+			Hops--;
 		}
 		else
 		{
@@ -48,6 +51,9 @@ public class EnemyHopper : EnemyCharacter {
 	protected override void OnCollisionEnter2D(Collision2D collision)
 	{
 		base.OnCollisionEnter2D(collision);
-		currentDirection *= -1;
+		if (Mathf.Abs(collision.relativeVelocity.x) >= Mathf.Abs(collision.relativeVelocity.y))
+		{
+			currentDirection *= -1;
+		}
 	}
 }

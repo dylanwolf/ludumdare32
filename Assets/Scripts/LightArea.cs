@@ -41,7 +41,7 @@ public class LightArea : MonoBehaviour {
 
 	Transform tmpPrefab;
 	public LightPower? AffectedPower;
-	void OnMouseUpAsButton()
+	void OnMouseDown()
 	{
 		if (GameState.CurrentActionState != ActionState.Playing)
 			return;
@@ -50,7 +50,7 @@ public class LightArea : MonoBehaviour {
 			return;
 
 		isInEffect = true;
-
+		Soundboard.PlayCastSpell();
 		triggeredLight.color = EffectConstants.GetEffectColor(GameState.CurrentLightPower);
 		AffectedPower = GameState.CurrentLightPower;
 		tmpPrefab = ParticlePrefabs[Random.Range(0, ParticlePrefabs.Length)];
