@@ -15,6 +15,7 @@ public class PlayerCharacter : MonoBehaviour {
 	public float GravityForce = 1.0f;
 	public float Speed = 1.0f;
 	public float AccelerationTime = 0.5f;
+	Animator anim;
 
 	bool isGrounded = false;
 	bool hitHead = false;
@@ -35,6 +36,7 @@ public class PlayerCharacter : MonoBehaviour {
 	void Awake()
 	{
 		_r = GetComponent<Rigidbody2D>();
+		anim = GetComponent<Animator>();
 		_t = transform;
 
 		Current = this;
@@ -123,6 +125,7 @@ public class PlayerCharacter : MonoBehaviour {
 	bool foundMatch = false;
 	Vector2 tmpVelocity;
 	Vector3 tmpScale;
+	bool walking = false;
 	void FixedUpdate()
 	{
 		// Test for current position
@@ -174,6 +177,7 @@ public class PlayerCharacter : MonoBehaviour {
 			// Apply walking
 			if (startedJump || speedUpFromStopCoroutineRunning || _r.velocity.x == 0 || inputDirection != lastInputDirection)
 			{
+				walking = true;
 				tmpVelocity.x = inputDirection * Speed * moveSpeed * jumpSpeedMultiplier;
 				tmpScale.x = Mathf.Abs(tmpScale.x) * Mathf.Sign(inputDirection);
 				changed = true;
@@ -184,6 +188,7 @@ public class PlayerCharacter : MonoBehaviour {
 		{
 			if (_r.velocity.x != 0)
 			{
+				walking = false;
 				tmpVelocity.x = 0;
 				changed = true;
 			}
@@ -213,7 +218,13 @@ public class PlayerCharacter : MonoBehaviour {
 		_t.localScale = tmpScale;
 		if (changed)
 			_r.velocity = tmpVelocity;
+
+		anim.SetBool(ANIM_JUMPING, Platforming == PlatformingState.Jumping || Platforming == PlatformingState.Falling);
+		anim.SetBool(ANIM_WALKING, Platforming == PlatformingState.Grounded && _r.velocity.x != 0);
 	}
+
+	const string ANIM_JUMPING = "Jumping";
+	const string ANIM_WALKING = "Walking";
 
 	IEnumerator SpeedUpFromStop()
 	{

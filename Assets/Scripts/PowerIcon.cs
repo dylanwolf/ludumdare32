@@ -7,7 +7,7 @@ public class PowerIcon : MonoBehaviour {
 	public LightPower Power;
 	public bool IsDefault = false;
 
-	void SwitchPower()
+	public void SwitchPower()
 	{
 		GameState.CurrentLightPower = Power;
 		PowerIconContainer.Current.Cursor.position = _t.position;

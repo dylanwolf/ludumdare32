@@ -39,6 +39,8 @@ public class CounterBar : MonoBehaviour {
 		}
 
 		tmpTransform.parent = parent;
+		tmpBar.lastFlipped = 0;
+		tmpBar.ParentTransform = parent;
 		tmpBar.MaxValue = maxValue;
 		tmpBar.Value = value;
 		tmpBar.Color = color;
@@ -53,12 +55,14 @@ public class CounterBar : MonoBehaviour {
 		bar.gameObject.SetActive(false);
 	}
 
+	Transform _t;
 	public Transform BarTransform;
 	public SpriteRenderer BarSprite;
 	public float Value;
 	public float MaxValue;
 	public Color Color;
 	bool updated = false;
+	public Transform ParentTransform;
 
 	public void UpdateValue(float value)
 	{
@@ -69,14 +73,31 @@ public class CounterBar : MonoBehaviour {
 	Vector3 tmpPos = Vector3.zero;
 	Vector3 tmpScale;
 	float pct;
+
+	void Awake()
+	{
+		_t = transform;
+	}
+
+	int lastFlipped = 0;
+	int thisFlipped = 0;
 	void Update()
 	{
+		thisFlipped = (int)Mathf.Sign(ParentTransform.lossyScale.x);
+		if (lastFlipped != thisFlipped)
+		{
+			lastFlipped = thisFlipped;
+			tmpScale = _t.localScale;
+			tmpScale.x = Mathf.Abs(tmpScale.x) * thisFlipped;
+			_t.localScale = tmpScale;
+		}
+
 		if (updated)
 		{
 			pct = 1-(Value / MaxValue);
 			tmpPos.x = -(MaxScale * PIXEL_TO_UNITS * pct) / 2;
 			tmpScale = BarTransform.localScale;
-			tmpScale.x = MaxScale * (1 - pct);
+			tmpScale.x = MaxScale * (1 - pct) * Mathf.Sign(ParentTransform.lossyScale.x);
 			BarTransform.localPosition = tmpPos;
 			BarTransform.localScale = tmpScale;
 			BarSprite.color = Color;
