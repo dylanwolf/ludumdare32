@@ -10,6 +10,7 @@ public class LevelExit : MonoBehaviour {
 	{
 		if (collider.gameObject.layer == LayerManager.PlayerLayer)
 		{
+			Soundboard.PlayExitLevel();
 			MessageWindow.Current.DisplayFinalText(Message, NextLevel);
 		}
 	}

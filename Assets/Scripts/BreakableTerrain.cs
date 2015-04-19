@@ -17,6 +17,7 @@ public class BreakableTerrain : MonoBehaviour {
 		if (power != LightPower.BreakTerrain)
 			return;
 
+		Soundboard.PlayDestroy();
 		tmpPrefab = ParticlePrefabs[Random.Range(0, ParticlePrefabs.Length)];
 		Instantiate(tmpPrefab, ParticleSource.position, ParticleSource.rotation * tmpPrefab.rotation);
 		DestroyObject(gameObject);

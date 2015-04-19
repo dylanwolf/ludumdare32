@@ -8,11 +8,13 @@ public class Hostage : MonoBehaviour {
 		// Player rescue
 		if (collider.gameObject.layer == LayerManager.PlayerLayer)
 		{
+			Soundboard.PlayRescue();
 			MessageWindow.Current.DisplayText("You rescued an innocent bystander!");
 			DestroyObject(gameObject);
 		}
 		else if (collider.gameObject.layer == LayerManager.EnemyCollisionLayer)
 		{
+			Soundboard.PlayGoodGuyDamage();
 			MessageWindow.Current.DisplayText("A bad guy attacked an innocent bystander!");
 			GameState.Current.SetStatus(ActionState.GameOver);
 			DestroyObject(gameObject);
