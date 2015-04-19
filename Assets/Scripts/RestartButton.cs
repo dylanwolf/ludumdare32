@@ -19,6 +19,7 @@ public class RestartButton : MonoBehaviour {
 
 	void OnMouseUpAsButton()
 	{
+		GameState.Current.SetStatus(ActionState.Playing);
 		Application.LoadLevel(Application.loadedLevel);
 	}
 }
