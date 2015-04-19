@@ -9,6 +9,7 @@ public class PowerIconContainer : MonoBehaviour {
 
 	public static PowerIconContainer Current;
 
+	bool isInit = false;
 	PowerIcon[] icons;
 
 	void Awake()
@@ -22,6 +23,12 @@ public class PowerIconContainer : MonoBehaviour {
 		foreach (PowerIcon icon in icons)
 		{
 			icon.gameObject.SetActive((GameState.OwnedPowers & icon.Power) != 0);
+			if (icon.gameObject.activeSelf && !isInit)
+			{
+				icon.SwitchPower();
+				isInit = true;
+			}
+
 		}
 	}
 
@@ -29,7 +36,7 @@ public class PowerIconContainer : MonoBehaviour {
 	{
 		Vector3 tmpPos = transform.localPosition;
 		tmpPos.x = -(_c.aspect * _c.orthographicSize) + Margin;
-		tmpPos.y = _c.orthographicSize - Margin;
+		tmpPos.y = -(_c.orthographicSize - Margin);
 		transform.localPosition = tmpPos;
 
 		icons = GetComponentsInChildren<PowerIcon>();
