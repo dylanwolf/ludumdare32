@@ -48,16 +48,24 @@ public class PlayerCharacter : MonoBehaviour {
 		childColliders = GetComponentsInChildren<Collider2D>();
 	}
 
+	float addedJumpBonus = 0;
 	IEnumerator JumpCoroutine()
 	{
 		Platforming = PlatformingState.Jumping;
-		for (float timer = JumpTimerMax + (jumpPower * JumpTimeBonus); timer >= 0; timer -= Time.deltaTime)
+		for (float timer = JumpTimerMax; timer >= 0; timer -= Time.deltaTime)
 		{
 			if (GameState.CurrentActionState != ActionState.Playing)
 			{
 				timer += Time.deltaTime;
 				yield return 0;
 			}
+
+			if (addedJumpBonus > 0)
+			{
+				timer += addedJumpBonus;
+				addedJumpBonus = 0;
+			}
+
 
 			if (Platforming != PlatformingState.Jumping)
 				break;
@@ -272,6 +280,7 @@ public class PlayerCharacter : MonoBehaviour {
 	IEnumerator HoldJumpButton()
 	{
 		holdJumpCoroutineRunning = true;
+		addedJumpBonus = 0;
 		for (jumpPower = 0; jumpPower < MaxJumpHoldTime; jumpPower += Time.deltaTime)
 		{
 			if (GameState.CurrentActionState != ActionState.Playing)
@@ -280,13 +289,13 @@ public class PlayerCharacter : MonoBehaviour {
 				yield return 0;
 			}
 
+			addedJumpBonus += (Time.deltaTime * JumpTimeBonus);
+
 			if (!isHoldingJump)
 				break;
 
 			yield return 0;
 		}
-
-		inputJump = true;
 		holdJumpCoroutineRunning = false;
 	}
 
@@ -306,6 +315,9 @@ public class PlayerCharacter : MonoBehaviour {
 
 		isHoldingJump = Input.GetButton(INPUT_JUMP);
 		if (isHoldingJump && !holdJumpCoroutineRunning)
+		{
+			inputJump = true;
 			StartCoroutine(HoldJumpButton());
+		}
 	}
 }
