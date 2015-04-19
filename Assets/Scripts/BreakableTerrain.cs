@@ -3,6 +3,7 @@ using System.Collections;
 
 public class BreakableTerrain : MonoBehaviour {
 
+	public bool HasGravity = true;
 	public Transform ParticleSource;
 	Transform tmpPrefab;
 	public Transform[] ParticlePrefabs;
@@ -63,6 +64,9 @@ public class BreakableTerrain : MonoBehaviour {
 	Vector3 tmpVelocity;
 	protected virtual void FixedUpdate()
 	{
+		if (!HasGravity)
+			return;
+
 		if (GameState.CurrentActionState != ActionState.Playing)
 		{
 			if (_r.velocity.x != 0 || _r.velocity.y != 0)
