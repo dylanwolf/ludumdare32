@@ -33,11 +33,14 @@ public abstract class EnemyCharacter : MonoBehaviour {
 	protected bool isFrozen = false;
 	Rigidbody2D _r;
 	protected Transform _t;
+	Animator anim;
+	const string ANIM_WALKING = "Walking";
 
 	protected virtual void Awake()
 	{
 		_r = GetComponent<Rigidbody2D>();
 		_t = transform;
+		anim = GetComponent<Animator>();
 	}
 
 	protected virtual void Start()
@@ -85,7 +88,7 @@ public abstract class EnemyCharacter : MonoBehaviour {
 
 		for (int i = 0; i < hitCount; i++)
 		{
-			if (raycastHits[i] == null)
+			if (raycastHits[i] == null || raycastHits[i].isTrigger)
 				break;
 
 			foundMatch = false;
@@ -213,7 +216,11 @@ public abstract class EnemyCharacter : MonoBehaviour {
 
 		_t.localScale = tmpScale;
 		if (changed)
+		{
 			_r.velocity = tmpVelocity;
+			if (anim != null)
+				anim.SetBool(ANIM_WALKING, _r.velocity.x != 0);
+		}
 	}
 
 	CounterBar healthBar;
@@ -245,6 +252,15 @@ public abstract class EnemyCharacter : MonoBehaviour {
 		else if (power == LightPower.Freeze)
 		{
 			isFrozen = true;
+		}
+	}
+
+	protected virtual void OnCollisionEnter2D(Collision2D collision)
+	{
+		if (collision.collider.gameObject.layer == LayerManager.PlayerLayer)
+		{
+			MessageWindow.Current.DisplayText("A bad guy defeated you!");
+			GameState.Current.SetStatus(ActionState.GameOver);
 		}
 	}
 }
