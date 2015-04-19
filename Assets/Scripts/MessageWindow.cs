@@ -106,12 +106,17 @@ public class MessageWindow : MonoBehaviour {
 		}
 		_r.enabled = false;
 
-		if (!string.IsNullOrEmpty(newLevel))
+		if (endGame)
 		{
-			Application.LoadLevel(newLevel);
-			GameState.Current.SetStatus(ActionState.Playing);
+			if (!string.IsNullOrEmpty(newLevel))
+			{
+				Application.LoadLevel(newLevel);
+				GameState.Current.SetStatus(ActionState.Playing);
+			}
 		}
 	}
+
+	bool endGame = false;
 
 	public void DisplayText(string message)
 	{
@@ -128,5 +133,6 @@ public class MessageWindow : MonoBehaviour {
 		MessageTime = 2.0f;
 		DisplayText(message);
 		newLevel = nextLevel;
+		endGame = true;
 	}
 }

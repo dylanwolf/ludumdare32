@@ -133,7 +133,6 @@ public class PlayerCharacter : MonoBehaviour {
 	bool foundMatch = false;
 	Vector2 tmpVelocity;
 	Vector3 tmpScale;
-	bool walking = false;
 	bool paused = false;
 	void FixedUpdate()
 	{
@@ -197,7 +196,6 @@ public class PlayerCharacter : MonoBehaviour {
 			// Apply walking
 			if (startedJump || speedUpFromStopCoroutineRunning || _r.velocity.x == 0 || inputDirection != lastInputDirection)
 			{
-				walking = true;
 				tmpVelocity.x = inputDirection * Speed * moveSpeed * jumpSpeedMultiplier;
 				tmpScale.x = Mathf.Abs(tmpScale.x) * Mathf.Sign(inputDirection);
 				changed = true;
@@ -208,7 +206,6 @@ public class PlayerCharacter : MonoBehaviour {
 		{
 			if (_r.velocity.x != 0)
 			{
-				walking = false;
 				tmpVelocity.x = 0;
 				changed = true;
 			}
