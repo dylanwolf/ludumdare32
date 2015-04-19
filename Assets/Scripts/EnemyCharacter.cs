@@ -113,6 +113,13 @@ public abstract class EnemyCharacter : MonoBehaviour {
 	Vector3 tmpScale;
 	protected virtual void FixedUpdate()
 	{
+		if (GameState.CurrentActionState != ActionState.Playing)
+		{
+			if (_r.velocity.x != 0 || _r.velocity.y != 0)
+				_r.velocity = Vector3.zero;
+			return;
+		}
+
 		// Test for current position
 		isGrounded = false;
 		changed = false;
@@ -198,7 +205,7 @@ public abstract class EnemyCharacter : MonoBehaviour {
 		}
 
 		// Apply falling
-		if (Platforming == PlatformingState.Falling && _r.velocity.y >= 0)
+		if (Platforming == PlatformingState.Falling && _r.velocity.y >= -GravityForce)
 		{
 			tmpVelocity.y = -GravityForce;
 			changed = true;

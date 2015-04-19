@@ -17,6 +17,13 @@ public class GameState : MonoBehaviour {
 
 	public LightPower[] StartingPowers;
 
+	public void SetStatus(ActionState state)
+	{
+		CurrentActionState = state;
+		if (state == ActionState.GameOver)
+			RestartButton.Show();
+	}
+
 	void Awake()
 	{
 		Current = this;

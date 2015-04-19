@@ -126,8 +126,20 @@ public class PlayerCharacter : MonoBehaviour {
 	Vector2 tmpVelocity;
 	Vector3 tmpScale;
 	bool walking = false;
+	bool paused = false;
 	void FixedUpdate()
 	{
+		if (GameState.CurrentActionState != ActionState.Playing)
+		{
+			if (_r.velocity.x != 0 || _r.velocity.y != 0)
+				_r.velocity = Vector3.zero;
+			anim.enabled = false;
+			paused = true;
+			return;
+		}
+		if (paused)
+			anim.enabled = true;
+
 		// Test for current position
 		isGrounded = false;
 		changed = false;
@@ -225,9 +237,10 @@ public class PlayerCharacter : MonoBehaviour {
 
 	const string ANIM_JUMPING = "Jumping";
 	const string ANIM_WALKING = "Walking";
-
+	bool startedSpeedUp = false;
 	IEnumerator SpeedUpFromStop()
 	{
+		startedSpeedUp = true;
 		speedUpFromStopCoroutineRunning = true;
 		for (float timer = 0; timer <= AccelerationTime; timer += Time.deltaTime)
 		{
@@ -237,10 +250,16 @@ public class PlayerCharacter : MonoBehaviour {
 				yield return 0;
 			}
 
+			if ((_r.velocity.x == 0 && !startedSpeedUp) || inputDirection == 0)
+				break;
+
+			if (_r.velocity.x != 0)
+				startedSpeedUp = false;
+
 			moveSpeed = Mathf.Sin(((timer/AccelerationTime) - 1) * Mathf.PI * 0.5f) + 1;
 			yield return 0;
 		}
-		moveSpeed = 1;
+		moveSpeed = (_r.velocity.x != 0 && inputDirection != 0) ? 1 : 0;
 		speedUpFromStopCoroutineRunning = false;
 	}
 
@@ -285,5 +304,14 @@ public class PlayerCharacter : MonoBehaviour {
 		isHoldingJump = Input.GetButton(INPUT_JUMP);
 		if (isHoldingJump && !holdJumpCoroutineRunning)
 			StartCoroutine(HoldJumpButton());
+	}
+
+	void OnCollisionEnter2D(Collision2D collision)
+	{
+		if (collision.collider.gameObject.layer == LayerManager.EnemyCollisionLayer)
+		{
+			MessageWindow.Current.DisplayText("A bad guy defeated you!");
+			GameState.Current.SetStatus(ActionState.GameOver);
+		}
 	}
 }
