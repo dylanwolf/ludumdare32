@@ -52,7 +52,7 @@ public class PlayerCharacter : MonoBehaviour {
 	IEnumerator JumpCoroutine()
 	{
 		Platforming = PlatformingState.Jumping;
-		for (float timer = JumpTimerMax; timer >= 0; timer -= Time.deltaTime)
+		for (float timer = JumpTimerMax * jumpPowerMultiplier; timer >= 0; timer -= Time.deltaTime)
 		{
 			if (GameState.CurrentActionState != ActionState.Playing)
 			{
@@ -84,6 +84,7 @@ public class PlayerCharacter : MonoBehaviour {
 
 	bool startedJump = false;
 	float jumpSpeedMultiplier = 1;
+	float jumpPowerMultiplier = 1;
 	void DoJump()
 	{
 		if (Platforming == PlatformingState.Grounded)
@@ -91,8 +92,13 @@ public class PlayerCharacter : MonoBehaviour {
 			jumpInput = inputDirection;
 			if (moveSpeed > 0.5)
 			{
-				jumpSpeedMultiplier = 1.5f;
-				jumpPower *= 1.25f;
+				//jumpSpeedMultiplier = 1.5f;
+				jumpPowerMultiplier = 1.25f;
+			}
+			else
+			{
+				jumpSpeedMultiplier = 1;
+				jumpPowerMultiplier = 1;
 			}
 			StartCoroutine(JUMP_COROUTINE);
 			startedJump = true;
@@ -216,9 +222,6 @@ public class PlayerCharacter : MonoBehaviour {
 		if (inputJump)
 			DoJump();
 
-		else if (Platforming != PlatformingState.Jumping)
-			StopCoroutine(JUMP_COROUTINE);
-
 		if (Platforming == PlatformingState.Jumping && _r.velocity.y <= 0)
 		{
 			tmpVelocity.y = JumpForce;
@@ -288,7 +291,7 @@ public class PlayerCharacter : MonoBehaviour {
 
 			addedJumpBonus += (Time.deltaTime * JumpTimeBonus);
 
-			if (!isHoldingJump)
+			if (!isHoldingJump || Platforming != PlatformingState.Jumping)
 				break;
 
 			yield return 0;
@@ -298,23 +301,28 @@ public class PlayerCharacter : MonoBehaviour {
 
 	const string INPUT_HORIZONTAL = "Horizontal";
 	const string INPUT_JUMP = "Jump";
+	const string HOLD_JUMP_COROUTINE = "HoldJumpButton";
 	void Update()
 	{
 		if (Input.GetKeyDown(KeyCode.Escape))
 			Application.Quit();
 
+		jumpInput = null;
 		if (jumpInput.HasValue)
 			inputDirection = jumpInput.Value;
 		else
 			inputDirection = Input.GetAxis(INPUT_HORIZONTAL);
 		if (inputDirection != 0 && lastInputDirection == 0)
 			StartCoroutine(SpeedUpFromStop());
+		else if (inputDirection == 0)
+			moveSpeed = 0;
 
 		isHoldingJump = Input.GetButton(INPUT_JUMP);
 		if (isHoldingJump && !holdJumpCoroutineRunning)
 		{
 			inputJump = true;
-			StartCoroutine(HoldJumpButton());
+			StopCoroutine(HOLD_JUMP_COROUTINE);
+			StartCoroutine(HOLD_JUMP_COROUTINE);
 		}
 	}
 }
