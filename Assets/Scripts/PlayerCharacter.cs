@@ -7,14 +7,14 @@ public class PlayerCharacter : MonoBehaviour {
 	public static Transform CurrentPosition;
 
 	[System.NonSerialized]
-	public PlatformingState Platforming = PlatformingState.Falling;
+	public PlatformingState Platforming = PlatformingState.Grounded;
 	public Transform[] GroundCircles;
 	public Transform[] HeadCircles;
-	public float JumpTimerMax = 0.5f;
-	public float JumpForce = 1.0f;
-	public float GravityForce = 1.0f;
-	public float Speed = 1.0f;
-	public float AccelerationTime = 0.5f;
+	public float MaxSpeed = 1.0f;
+	public float AccelerationRate = 1.0f;
+	public float DeclerationRate = 1.5f;
+	public float ReactPct = 0.3f;
+	float speedPct = 0;
 	Animator anim;
 
 	bool isGrounded = false;
@@ -26,8 +26,6 @@ public class PlayerCharacter : MonoBehaviour {
 
 	float inputDirection;
 	float lastInputDirection;
-	float? jumpInput;
-	float moveSpeed = 0;
 	bool inputJump;
 
 	Rigidbody2D _r;
@@ -48,58 +46,91 @@ public class PlayerCharacter : MonoBehaviour {
 		childColliders = GetComponentsInChildren<Collider2D>();
 	}
 
-	float addedJumpBonus = 0;
+	public float MaxJumpTime = 0.5f;
+	public float MaxJumpHeight = 4.0f;
+	float jumpStartY = 0;
+	float jumpEndY = 0;
+	float jumpVelocity = 0;
+	bool isHoldingJump = false;
+
+	float jumpPosY = 0;
+	float jumpT = 0;
+	float jumpTSquared = 0;
+
+	bool startedJump;
 	IEnumerator JumpCoroutine()
 	{
 		Platforming = PlatformingState.Jumping;
-		for (float timer = JumpTimerMax * jumpPowerMultiplier; timer >= 0; timer -= Time.deltaTime)
+		jumpVelocity = 0;
+
+		jumpStartY = _t.position.y;
+		jumpEndY = jumpStartY + MaxJumpHeight;
+
+		jumpTSquared = Mathf.Pow(MaxJumpTime, 2);
+
+		while (_t.position.y < jumpEndY && Platforming == PlatformingState.Jumping && isHoldingJump)
 		{
+			// Handle pause
 			if (GameState.CurrentActionState != ActionState.Playing)
-			{
-				timer += Time.deltaTime;
 				yield return 0;
-			}
 
-			if (addedJumpBonus > 0)
-			{
-				timer += addedJumpBonus;
-				addedJumpBonus = 0;
-			}
-
-
-			if (Platforming != PlatformingState.Jumping)
-				break;
+			// Adjust velocity
+			jumpPosY = _t.position.y - jumpStartY;
+			jumpT = Mathf.Sqrt(jumpTSquared - ((jumpPosY * jumpTSquared) / MaxJumpHeight));
+			jumpVelocity = (2 * jumpT * MaxJumpHeight) / jumpTSquared;
 
 			yield return 0;
 		}
 
-		jumpSpeedMultiplier = 1;
 		if (Platforming != PlatformingState.Grounded)
-		{
-			Platforming = PlatformingState.Falling;
-		}
+			DoFall();
 	}
 
 	const string JUMP_COROUTINE = "JumpCoroutine";
 
-	bool startedJump = false;
-	float jumpSpeedMultiplier = 1;
-	float jumpPowerMultiplier = 1;
+	void DoFall()
+	{
+		if (!isAcceleratingFall)
+			StartCoroutine(FALL_COROUTINE);
+	}
+
+	const string FALL_COROUTINE = "FallingCoroutine";
+
+	bool isAcceleratingFall = false;
+	float fallVelocity = 0;
+	IEnumerator FallingCoroutine()
+	{
+		if (Platforming != PlatformingState.Falling)
+		{
+			isAcceleratingFall = true;
+			Platforming = PlatformingState.Falling;
+			fallVelocity = 0;
+			jumpTSquared = Mathf.Pow(MaxJumpTime, 2);
+
+			for (float t = 0; t < MaxJumpTime; t += Time.deltaTime)
+			{
+				if (GameState.CurrentActionState != ActionState.Playing)
+				{
+					t -= Time.deltaTime;
+					yield return 0;
+				}
+
+				if (Platforming != PlatformingState.Falling)
+					break;
+
+				t += Time.deltaTime;
+				fallVelocity = -(2 * t * MaxJumpHeight) / jumpTSquared;
+				yield return 0;
+			}
+
+			isAcceleratingFall = false;
+		}
+	}
+
 	void DoJump()
 	{
 		if (Platforming == PlatformingState.Grounded)
 		{
-			jumpInput = inputDirection;
-			if (moveSpeed > 0.5)
-			{
-				//jumpSpeedMultiplier = 1.5f;
-				jumpPowerMultiplier = 1.25f;
-			}
-			else
-			{
-				jumpSpeedMultiplier = 1;
-				jumpPowerMultiplier = 1;
-			}
 			StartCoroutine(JUMP_COROUTINE);
 			startedJump = true;
 		}
@@ -135,6 +166,7 @@ public class PlayerCharacter : MonoBehaviour {
 		return false;
 	}
 
+	int facing = 1;
 	bool changed = false;
 	bool foundMatch = false;
 	Vector2 tmpVelocity;
@@ -167,13 +199,12 @@ public class PlayerCharacter : MonoBehaviour {
 
 		if (isGrounded && Platforming != PlatformingState.Grounded)
 		{
-			jumpInput = null;
 			Platforming = PlatformingState.Grounded;
 			changed = true;
 		}
 		else if (!isGrounded && Platforming == PlatformingState.Grounded)
 		{
-			Platforming = PlatformingState.Falling;
+			DoFall();
 			changed = true;
 		}
 
@@ -184,14 +215,14 @@ public class PlayerCharacter : MonoBehaviour {
 			{
 				if (TestRaycastHit(t, LayerManager.EnemyAndTerrainLayers))
 				{
-					Debug.Log("Hit head");
 					hitHead = true;
 					break;
 				}
 			}
 
 			if (hitHead)
-				Platforming = PlatformingState.Falling;
+				DoFall();
+
 		}
 
 		// Apply movement
@@ -200,38 +231,41 @@ public class PlayerCharacter : MonoBehaviour {
 		if (inputDirection != 0)
 		{
 			// Apply walking
-			if (startedJump || speedUpFromStopCoroutineRunning || _r.velocity.x == 0 || inputDirection != lastInputDirection)
+			if (startedJump || speedPct < 1 || inputDirection != lastInputDirection)
 			{
-				tmpVelocity.x = inputDirection * Speed * moveSpeed * jumpSpeedMultiplier;
-				tmpScale.x = Mathf.Abs(tmpScale.x) * Mathf.Sign(inputDirection);
+				speedPct += (Time.fixedDeltaTime * AccelerationRate);
+				speedPct = Mathf.Clamp(speedPct, 0, 1);
+				facing = (int)Mathf.Sign(inputDirection);
+				tmpScale.x = Mathf.Abs(tmpScale.x) * facing;
 				changed = true;
 			}
 			startedJump = false;
 		}
 		else
 		{
-			if (_r.velocity.x != 0)
+			if (speedPct > 0)
 			{
-				tmpVelocity.x = 0;
+				speedPct -= (Time.fixedDeltaTime * DeclerationRate);
+				speedPct = Mathf.Clamp(speedPct, 0, 1);
 				changed = true;
 			}
 		}
-		lastInputDirection = inputDirection;
+		tmpVelocity.x = facing * Mathf.Sin(speedPct * 0.5f * Mathf.PI) * MaxSpeed;
 
 		// Apply jumping
 		if (inputJump)
 			DoJump();
 
-		if (Platforming == PlatformingState.Jumping && _r.velocity.y <= 0)
+		if (Platforming == PlatformingState.Jumping)
 		{
-			tmpVelocity.y = JumpForce;
+			tmpVelocity.y = jumpVelocity;
 			changed = true;
 		}
 
 		// Apply falling
-		if (Platforming == PlatformingState.Falling && _r.velocity.y > -GravityForce)
+		if (Platforming == PlatformingState.Falling)
 		{
-			tmpVelocity.y = -GravityForce;
+			tmpVelocity.y = fallVelocity;
 			changed = true;
 		}
 
@@ -245,84 +279,30 @@ public class PlayerCharacter : MonoBehaviour {
 
 	const string ANIM_JUMPING = "Jumping";
 	const string ANIM_WALKING = "Walking";
-	bool startedSpeedUp = false;
-	IEnumerator SpeedUpFromStop()
-	{
-		startedSpeedUp = true;
-		speedUpFromStopCoroutineRunning = true;
-		for (float timer = 0; timer <= AccelerationTime; timer += Time.deltaTime)
-		{
-			if (GameState.CurrentActionState != ActionState.Playing)
-			{
-				timer -= Time.deltaTime;
-				yield return 0;
-			}
-
-			if ((_r.velocity.x == 0 && !startedSpeedUp) || inputDirection == 0)
-				break;
-
-			if (_r.velocity.x != 0)
-				startedSpeedUp = false;
-
-			moveSpeed = Mathf.Sin(((timer/AccelerationTime) - 1) * Mathf.PI * 0.5f) + 1;
-			yield return 0;
-		}
-		moveSpeed = (_r.velocity.x != 0 && inputDirection != 0) ? 1 : 0;
-		speedUpFromStopCoroutineRunning = false;
-	}
-
-	float jumpPower = 0;
-	public float MaxJumpHoldTime = 0.2f;
-	public float JumpTimeBonus = 0.3f;
-	bool isHoldingJump = false;
-	bool holdJumpCoroutineRunning = false;
-	bool speedUpFromStopCoroutineRunning = false;
-	IEnumerator HoldJumpButton()
-	{
-		holdJumpCoroutineRunning = true;
-		addedJumpBonus = 0;
-		for (jumpPower = 0; jumpPower < MaxJumpHoldTime; jumpPower += Time.deltaTime)
-		{
-			if (GameState.CurrentActionState != ActionState.Playing)
-			{
-				jumpPower -= Time.deltaTime;
-				yield return 0;
-			}
-
-			addedJumpBonus += (Time.deltaTime * JumpTimeBonus);
-
-			if (!isHoldingJump || Platforming != PlatformingState.Jumping)
-				break;
-
-			yield return 0;
-		}
-		holdJumpCoroutineRunning = false;
-	}
 
 	const string INPUT_HORIZONTAL = "Horizontal";
 	const string INPUT_JUMP = "Jump";
-	const string HOLD_JUMP_COROUTINE = "HoldJumpButton";
+	bool wasHoldingJump = false;
 	void Update()
 	{
 		if (Input.GetKeyDown(KeyCode.Escape))
 			Application.Quit();
 
-		jumpInput = null;
-		if (jumpInput.HasValue)
-			inputDirection = jumpInput.Value;
-		else
-			inputDirection = Input.GetAxis(INPUT_HORIZONTAL);
-		if (inputDirection != 0 && lastInputDirection == 0)
-			StartCoroutine(SpeedUpFromStop());
-		else if (inputDirection == 0)
-			moveSpeed = 0;
+		lastInputDirection = inputDirection;
+		inputDirection = Input.GetAxisRaw(INPUT_HORIZONTAL);
+		if (inputDirection != 0)
+		{
+			if (speedPct <= 0)
+				speedPct = 0;
+			else if (inputDirection != lastInputDirection)
+				speedPct *= 0.5f;
+		}
 
 		isHoldingJump = Input.GetButton(INPUT_JUMP);
-		if (isHoldingJump && !holdJumpCoroutineRunning)
+		if (isHoldingJump && !wasHoldingJump)
 		{
 			inputJump = true;
-			StopCoroutine(HOLD_JUMP_COROUTINE);
-			StartCoroutine(HOLD_JUMP_COROUTINE);
 		}
+		wasHoldingJump = isHoldingJump;
 	}
 }

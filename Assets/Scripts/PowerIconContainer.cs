@@ -22,7 +22,7 @@ public class PowerIconContainer : MonoBehaviour {
 	{
 		foreach (PowerIcon icon in icons)
 		{
-			icon.gameObject.SetActiveRecursively((GameState.OwnedPowers & icon.Power) != 0);
+			icon.gameObject.SetActive((GameState.OwnedPowers & icon.Power) != 0);
 			if (icon.gameObject.activeSelf && !isInit)
 			{
 				icon.SwitchPower();
